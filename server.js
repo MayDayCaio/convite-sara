@@ -13,72 +13,63 @@ const port = 3001;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-app.use(cors());
-app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
+// --- Middlewares ---
+app.use(cors()); // Permite a comunicação com o frontend
+// Informa que a pasta 'public' contém arquivos que podem ser acessados diretamente pela URL
+app.use(express.static("public"));
 
+// --- Configuração do Upload ---
 const storage = multer.diskStorage({
 	destination: (req, file, cb) => {
 		const uploadPath = "public/uploads/";
-		fs.mkdirSync(uploadPath, { recursive: true });
+		fs.mkdirSync(uploadPath, { recursive: true }); // Garante que a pasta exista
 		cb(null, uploadPath);
 	},
 	filename: (req, file, cb) => {
-		const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-		cb(null, uniqueSuffix + path.extname(file.originalname));
+		const uniqueName = Date.now() + path.extname(file.originalname);
+		cb(null, uniqueName);
 	},
 });
-
 const upload = multer({ storage: storage });
 
-// --- Rotas da API ---
+// --- API Endpoints ---
 
-// Rota para listar as fotos
+// 1. Endpoint para LISTAR as fotos
 app.get("/api/photos", (req, res) => {
-	// ✅ **NOVA LINHA:** Diz ao navegador para não guardar esta resposta em cache.
-	res.setHeader("Cache-Control", "no-store");
-
-	console.log(
-		`[${new Date().toLocaleTimeString()}] Recebida requisição para /api/photos`
-	);
-
+	console.log(`[SERVIDOR] Recebi um pedido para listar as fotos.`);
 	const directoryPath = path.join(__dirname, "public/uploads");
+
 	fs.readdir(directoryPath, (err, files) => {
+		// Se a pasta não existir, retorna uma lista vazia.
 		if (err) {
-			if (err.code === "ENOENT") {
-				console.log(
-					"Diretório 'public/uploads' não encontrado, retornando lista vazia."
-				);
-				return res.json([]);
-			}
-			console.error("Erro ao ler o diretório de uploads:", err);
-			return res
-				.status(500)
-				.json({ message: "Não foi possível ler as fotos." });
+			return res.json([]);
 		}
 
-		const imageFiles = files
+		// Filtra apenas por arquivos de imagem e cria o caminho relativo
+		const photoUrls = files
 			.filter((file) => /\.(jpg|jpeg|png|gif)$/i.test(file))
-			.map((file) => `uploads/${file}`)
-			.reverse();
+			.map((file) => `uploads/${file}`) // Ex: 'uploads/12345.jpg'
 
-		console.log(`Encontradas ${imageFiles.length} fotos. Enviando lista.`);
-		res.json(imageFiles);
+		console.log(
+			`[SERVIDOR] Encontrei ${photoUrls.length} fotos. Enviando a lista.`
+		);
+		res.json(photoUrls);
 	});
 });
 
-// Rota para fazer o upload de uma nova foto
+// 2. Endpoint para RECEBER uma nova foto
 app.post("/api/upload", upload.single("photo"), (req, res) => {
 	if (!req.file) {
 		return res
 			.status(400)
 			.json({ success: false, message: "Nenhum arquivo enviado." });
 	}
-	console.log(`Upload bem-sucedido: ${req.file.filename}`);
+	console.log(`[SERVIDOR] Foto '${req.file.filename}' salva com sucesso.`);
+	// Responde com sucesso e o caminho da nova foto
 	res.json({ success: true, url: `uploads/${req.file.filename}` });
 });
 
-// Inicia o servidor
+// --- Iniciar Servidor ---
 app.listen(port, () => {
-	console.log(`🎉 Servidor backend rodando em http://localhost:${port}`);
-	console.log("Aguardando requisições do frontend...");
+	console.log(`🎉 Servidor rodando em http://localhost:${port}`);
 });

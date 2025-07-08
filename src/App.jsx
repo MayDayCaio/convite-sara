@@ -28,7 +28,6 @@ import {
 } from "lucide-react";
 import profilePic from "./assets/2.png";
 
-// URL do nosso servidor backend
 const API_BASE_URL = "http://localhost:3001";
 
 // --- Componentes Visuais (sem alterações) --- //
@@ -56,7 +55,6 @@ const Firefly = ({ style }) => (
 	<div className="absolute rounded-full bg-yellow-200" style={style}></div>
 );
 
-// --- Componente Principal --- //
 function App() {
 	const [hasInteracted, setHasInteracted] = useState(false);
 	const [activeModal, setActiveModal] = useState(null);
@@ -66,38 +64,26 @@ function App() {
 	const [photos, setPhotos] = useState([]);
 	const [arePhotosLoading, setArePhotosLoading] = useState(true);
 
-	// ✅ **LÓGICA CENTRALIZADA PARA BUSCAR FOTOS**
-	// Usamos useCallback para que esta função não seja recriada a cada renderização.
 	const fetchPhotos = useCallback(() => {
+		console.log("[APP] Buscando a lista de fotos do servidor...");
 		setArePhotosLoading(true);
-		console.log("Buscando lista de fotos atualizada do servidor...");
 		fetch(`${API_BASE_URL}/api/photos`)
-			.then((response) => {
-				if (!response.ok) {
-					throw new Error(`A resposta da rede não foi boa`);
-				}
-				return response.json();
-			})
+			.then((res) => res.json())
 			.then((serverPhotos) => {
-				console.log(`Fotos recebidas: ${serverPhotos.length}`);
+				console.log(
+					`[APP] Recebi ${serverPhotos.length} fotos. Atualizando o estado.`
+				);
 				setPhotos(serverPhotos);
 			})
-			.catch((error) => {
-				console.error("Erro ao buscar fotos:", error);
-				alert(`Não foi possível carregar as recordações.`);
-			})
-			.finally(() => {
-				setArePhotosLoading(false);
-			});
-	}, []); // O array vazio [] significa que a função nunca muda.
+			.catch((error) => console.error("[APP] Erro ao buscar fotos:", error))
+			.finally(() => setArePhotosLoading(false));
+	}, []);
 
-	// ✅ **EFEITO INICIAL**
-	// Busca as fotos apenas uma vez, quando o componente é montado pela primeira vez.
 	useEffect(() => {
 		fetchPhotos();
 	}, [fetchPhotos]);
 
-	// O resto da lógica do App (countdown, música, etc.) permanece o mesmo...
+	// Demais lógicas do App (sem alterações)
 	useEffect(() => {
 		const timer = setInterval(() => {
 			const partyDate = new Date("2025-08-17T12:00:00").getTime();
@@ -467,7 +453,6 @@ function App() {
 							</div>
 						</main>
 					</div>
-					{/* ✅ MODIFICADO: Passa a função `fetchPhotos` para o modal da galeria */}
 					{activeModal === "rsvp" && (
 						<RSVPForm onClose={() => setActiveModal(null)} />
 					)}
@@ -479,7 +464,7 @@ function App() {
 							onClose={() => setActiveModal(null)}
 							photos={photos}
 							isLoading={arePhotosLoading}
-							onPhotoUploadSuccess={fetchPhotos}
+							onUploadSuccess={fetchPhotos}
 						/>
 					)}
 				</>
@@ -643,53 +628,44 @@ const GiftListModal = ({ onClose }) => {
 	);
 };
 
-// ✅ **MODIFICADO: O modal da galeria agora chama uma função quando o upload é bem-sucedido**
-const PhotoGalleryModal = ({
-	onClose,
-	photos,
-	isLoading,
-	onPhotoUploadSuccess,
-}) => {
+const PhotoGalleryModal = ({ onClose, photos, isLoading, onUploadSuccess }) => {
 	const [isUploading, setIsUploading] = useState(false);
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const fileInputRef = useRef(null);
 
-	const handleFileSelect = () => fileInputRef.current.click();
+	// ✅ **NOVO EFEITO:** Garante que o carrossel vá para a foto mais recente sempre que a lista de fotos mudar
+	useEffect(() => {
+		setCurrentIndex(0);
+	}, [photos]);
 
 	const handlePhotoUpload = (event) => {
 		const file = event.target.files[0];
-		if (file) {
-			setIsUploading(true);
-			const formData = new FormData();
-			formData.append("photo", file);
+		if (!file) return;
 
-			fetch(`${API_BASE_URL}/api/upload`, {
-				method: "POST",
-				body: formData,
+		setIsUploading(true);
+		const formData = new FormData();
+		formData.append("photo", file);
+
+		fetch(`${API_BASE_URL}/api/upload`, { method: "POST", body: formData })
+			.then((res) => res.json())
+			.then((data) => {
+				if (data.success) {
+					console.log(
+						"[GALERIA] Upload OK. Pedindo para o App atualizar a lista."
+					);
+					onUploadSuccess(); // AVISA O PAI PARA BUSCAR A LISTA NOVA
+				} else {
+					alert("Erro no upload: " + data.message);
+				}
 			})
-				.then((response) => response.json())
-				.then((data) => {
-					if (data.success) {
-						console.log("Upload com sucesso! A pedir a nova lista de fotos.");
-						// Em vez de atualizar o estado localmente, chama a função do componente pai.
-						onPhotoUploadSuccess();
-						setCurrentIndex(0); // Reseta o carrossel para a imagem mais nova
-					} else {
-						alert("Erro ao enviar a foto: " + data.message);
-					}
-				})
-				.catch((error) => {
-					console.error("Erro no upload:", error);
-					alert("Ocorreu um erro de rede. Tente novamente.");
-				})
-				.finally(() => {
-					setIsUploading(false);
-				});
-		}
+			.catch((err) => console.error("[GALERIA] Erro de upload:", err))
+			.finally(() => setIsUploading(false));
 	};
 
-	const nextPhoto = () => setCurrentIndex((prev) => (prev + 1) % photos.length);
+	const nextPhoto = () =>
+		photos.length && setCurrentIndex((prev) => (prev + 1) % photos.length);
 	const prevPhoto = () =>
+		photos.length &&
 		setCurrentIndex((prev) => (prev - 1 + photos.length) % photos.length);
 
 	return (
@@ -712,10 +688,9 @@ const PhotoGalleryModal = ({
 				) : photos.length > 0 ? (
 					<>
 						<img
-							key={photos[currentIndex]} // Adiciona uma key para forçar o React a recarregar a tag img
 							src={`${API_BASE_URL}/${photos[currentIndex]}`}
 							alt={`Recordação ${currentIndex + 1}`}
-							className="w-full h-auto max-h-[55vh] object-contain rounded-lg animate-fade-in"
+							className="w-full h-auto max-h-[55vh] object-contain rounded-lg"
 						/>
 						{photos.length > 1 && (
 							<>
@@ -752,7 +727,7 @@ const PhotoGalleryModal = ({
 					className="hidden"
 				/>
 				<button
-					onClick={handleFileSelect}
+					onClick={() => fileInputRef.current.click()}
 					disabled={isUploading}
 					className="w-full bg-yellow-400 text-gray-800 font-bold py-2.5 rounded-full text-base transition-transform duration-300 hover:scale-105 shadow-lg flex items-center justify-center gap-2 disabled:bg-yellow-200 disabled:cursor-not-allowed">
 					{isUploading ? (
