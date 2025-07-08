@@ -27,6 +27,8 @@ import {
 
 // Importa a foto de perfil estática.
 import profilePic from "./assets/2.png";
+// Adicione esta linha no topo do ficheiro, depois das importações
+const API_BASE_URL = "https://convites-sarah.dustdevs.com";
 
 // --- Componentes Visuais --- //
 const DaisyVisual = () => (
@@ -70,7 +72,7 @@ function App() {
 
 	// **CORRIGIDO**: Busca as fotos do servidor UMA VEZ quando o componente App é montado.
 	useEffect(() => {
-		fetch(`./list_photos.php?t=${new Date().getTime()}`)
+		fetch(`/api/list_photos.php?t=${new Date().getTime()}`)
 			.then((response) => response.json())
 			.then((serverPhotos) => {
 				// Nenhuma formatação necessária se as URLs já vierem prontas do banco
@@ -82,8 +84,6 @@ function App() {
 				setArePhotosLoading(false);
 			});
 	}, []);
-	
-	
 
 	useEffect(() => {
 		const timer = setInterval(() => {
@@ -657,7 +657,7 @@ const PhotoGalleryModal = ({ onClose, photos, setPhotos, isLoading }) => {
 			const formData = new FormData();
 			formData.append("photo", file);
 
-			fetch("./upload.php", { method: "POST", body: formData })
+			fetch("/api/upload.php", { method: "POST", body: formData })
 				.then((response) => response.json())
 				.then((data) => {
 					if (data.success) {
@@ -676,7 +676,7 @@ const PhotoGalleryModal = ({ onClose, photos, setPhotos, isLoading }) => {
 		}
 	};
 
-	// ✅ Exibição da imagem (sem prefixos)	  
+	// ✅ Exibição da imagem (sem prefixos)
 
 	const nextPhoto = () => setCurrentIndex((prev) => (prev + 1) % photos.length);
 	const prevPhoto = () =>
