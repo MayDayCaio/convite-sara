@@ -1,4 +1,5 @@
-// Importa as bibliotecas necessárias do React e os ícones da Lucide React.
+// src/App.jsx
+
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
 	Heart,
@@ -11,26 +12,20 @@ import {
 	X,
 	Shirt,
 	ToyBrick,
-	BookOpen,
-	DollarSign,
+	Loader,
 	Camera,
 	Music,
 	Music2,
-	Copy,
-	CheckCircle,
 	ChevronLeft,
 	ChevronRight,
-	MessageCircle,
 	Upload,
-	Loader,
 } from "lucide-react";
-
-// Importa a foto de perfil estática.
 import profilePic from "./assets/2.png";
-// Adicione esta linha no topo do ficheiro, depois das importações
 
+// URL do nosso novo servidor backend Node.js
+const API_BASE_URL = "http://localhost:3001";
 
-// --- Componentes Visuais --- //
+// --- Componentes Visuais (sem alterações) --- //
 const DaisyVisual = () => (
 	<div className="relative w-full h-full">
 		<div className="absolute inset-0 m-auto w-1/3 h-1/3 bg-yellow-300 rounded-full z-10 shadow-md"></div>
@@ -57,27 +52,20 @@ const Firefly = ({ style }) => (
 
 // --- Componente Principal --- //
 function App() {
-	// --- Estados --- //
 	const [hasInteracted, setHasInteracted] = useState(false);
 	const [activeModal, setActiveModal] = useState(null);
 	const [timeLeft, setTimeLeft] = useState({});
 	const [isMusicPlaying, setIsMusicPlaying] = useState(false);
 	const audioRef = useRef(null);
-
-	// **CORRIGIDO**: O estado das fotos agora vive no componente principal (App).
 	const [photos, setPhotos] = useState([]);
 	const [arePhotosLoading, setArePhotosLoading] = useState(true);
 
-	// --- Lógica --- //
-
-	// **CORRIGIDO**: Busca as fotos do servidor UMA VEZ quando o componente App é montado.
+	// MODIFICADO: Busca as fotos do nosso novo servidor Node.js
 	useEffect(() => {
-		fetch(`${API_BASE_URL}/api/list_photos.php?t=${new Date().getTime()}`) // MODIFICADO AQUI
+		fetch(`${API_BASE_URL}/api/photos`)
 			.then((response) => {
 				if (!response.ok) {
-					throw new Error(
-						`A resposta da rede não foi boa: ${response.statusText}`
-					);
+					throw new Error(`A resposta da rede não foi boa`);
 				}
 				return response.json();
 			})
@@ -86,15 +74,15 @@ function App() {
 				setArePhotosLoading(false);
 			})
 			.catch((error) => {
-				console.error("Erro detalhado ao buscar fotos:", error);
-				// Alerta melhorado para depuração
+				console.error("Erro ao buscar fotos:", error);
 				alert(
-					`Não foi possível carregar as recordações. Verifique a consola para mais detalhes. Erro: ${error.message}`
+					`Não foi possível carregar as recordações. Verifique a consola para mais detalhes.`
 				);
 				setArePhotosLoading(false);
 			});
 	}, []);
 
+	// O resto da lógica do App (countdown, música, etc.) permanece o mesmo...
 	useEffect(() => {
 		const timer = setInterval(() => {
 			const partyDate = new Date("2025-08-17T12:00:00").getTime();
@@ -114,7 +102,6 @@ function App() {
 		}, 1000);
 		return () => clearInterval(timer);
 	}, []);
-
 	const handleEnter = () => {
 		setHasInteracted(true);
 		if (audioRef.current && !isMusicPlaying) {
@@ -126,7 +113,6 @@ function App() {
 				);
 		}
 	};
-
 	const toggleMusic = () => {
 		if (!audioRef.current) return;
 		if (isMusicPlaying) {
@@ -138,8 +124,6 @@ function App() {
 		}
 		setIsMusicPlaying(!isMusicPlaying);
 	};
-
-	// --- Dados --- //
 	const sceneryElements = useMemo(
 		() =>
 			Array.from({ length: 45 }).map((_, i) =>
@@ -430,10 +414,6 @@ function App() {
 									</p>
 								</div>
 								<div className="text-left bg-black/20 p-4 rounded-xl text-sm italic text-white/80">
-									<MessageCircle
-										size={16}
-										className="inline-block mr-2 text-yellow-300"
-									/>
 									{parentsMessage}
 								</div>
 							</div>
@@ -492,7 +472,7 @@ function App() {
 	);
 }
 
-// --- Componentes Modais e de Formulário --- //
+// --- Componentes Modais --- //
 const Modal = ({ onClose, children }) => (
 	<div
 		className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
@@ -504,13 +484,11 @@ const Modal = ({ onClose, children }) => (
 		</div>
 	</div>
 );
-
 const RSVPForm = ({ onClose }) => {
 	const [name, setName] = useState("");
 	const [adults, setAdults] = useState(1);
 	const [children, setChildren] = useState(0);
 	const [submissionStatus, setSubmissionStatus] = useState("");
-
 	const handleSubmit = (e) => {
 		e.preventDefault();
 		setSubmissionStatus("A enviar a confirmação...");
@@ -520,7 +498,6 @@ const RSVPForm = ({ onClose }) => {
 		formData.append("Nome", name);
 		formData.append("Adultos", adults);
 		formData.append("Crianças", children);
-
 		fetch(scriptURL, { method: "POST", body: formData })
 			.then((response) => {
 				setSubmissionStatus(`🎉 Oba, ${name}! Presença confirmada.`);
@@ -533,7 +510,6 @@ const RSVPForm = ({ onClose }) => {
 				console.error("Erro!", error.message);
 			});
 	};
-
 	return (
 		<Modal onClose={onClose}>
 			<div className="flex justify-between items-center mb-3">
@@ -615,13 +591,11 @@ const RSVPForm = ({ onClose }) => {
 		</Modal>
 	);
 };
-
 const GiftListModal = ({ onClose }) => {
 	const giftList = [
 		{ id: 1, icon: <Shirt size={24} />, name: "Roupinhas (Tamanho 2)" },
 		{ id: 2, icon: <ToyBrick size={24} />, name: "Brinquedos Educativos" },
 	];
-
 	return (
 		<Modal onClose={onClose}>
 			<div className="flex justify-between items-center mb-4">
@@ -653,7 +627,7 @@ const GiftListModal = ({ onClose }) => {
 	);
 };
 
-// **CORRIGIDO**: O modal agora recebe a lista de fotos e a função para a atualizar do componente App.
+// MODIFICADO: Componente PhotoGalleryModal totalmente atualizado para usar o backend Node.js
 const PhotoGalleryModal = ({ onClose, photos, setPhotos, isLoading }) => {
 	const [isUploading, setIsUploading] = useState(false);
 	const [currentIndex, setCurrentIndex] = useState(0);
@@ -668,10 +642,10 @@ const PhotoGalleryModal = ({ onClose, photos, setPhotos, isLoading }) => {
 			const formData = new FormData();
 			formData.append("photo", file);
 
-			fetch(`${API_BASE_URL}/api/upload.php`, {
+			fetch(`${API_BASE_URL}/api/upload`, {
 				method: "POST",
 				body: formData,
-			}) 
+			})
 				.then((response) => response.json())
 				.then((data) => {
 					if (data.success) {
@@ -689,8 +663,6 @@ const PhotoGalleryModal = ({ onClose, photos, setPhotos, isLoading }) => {
 				});
 		}
 	};
-
-	// ✅ Exibição da imagem (sem prefixos)
 
 	const nextPhoto = () => setCurrentIndex((prev) => (prev + 1) % photos.length);
 	const prevPhoto = () =>
@@ -716,7 +688,7 @@ const PhotoGalleryModal = ({ onClose, photos, setPhotos, isLoading }) => {
 				) : photos.length > 0 ? (
 					<>
 						<img
-							src={photos[currentIndex]}
+							src={`${API_BASE_URL}/${photos[currentIndex]}`}
 							alt={`Recordação ${currentIndex + 1}`}
 							className="w-full h-auto max-h-[55vh] object-contain rounded-lg"
 						/>
