@@ -1,6 +1,12 @@
 // src/App.jsx
 
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, {
+	useState,
+	useMemo,
+	useEffect,
+	useRef,
+	useCallback,
+} from "react";
 import {
 	Heart,
 	MapPin,
@@ -22,7 +28,7 @@ import {
 } from "lucide-react";
 import profilePic from "./assets/2.png";
 
-// URL do nosso novo servidor backend Node.js
+// URL do nosso servidor backend
 const API_BASE_URL = "http://localhost:3001";
 
 // --- Componentes Visuais (sem alterações) --- //
@@ -60,8 +66,11 @@ function App() {
 	const [photos, setPhotos] = useState([]);
 	const [arePhotosLoading, setArePhotosLoading] = useState(true);
 
-	// MODIFICADO: Busca as fotos do nosso novo servidor Node.js
-	useEffect(() => {
+	// ✅ **LÓGICA CENTRALIZADA PARA BUSCAR FOTOS**
+	// Usamos useCallback para que esta função não seja recriada a cada renderização.
+	const fetchPhotos = useCallback(() => {
+		setArePhotosLoading(true);
+		console.log("Buscando lista de fotos atualizada do servidor...");
 		fetch(`${API_BASE_URL}/api/photos`)
 			.then((response) => {
 				if (!response.ok) {
@@ -70,17 +79,23 @@ function App() {
 				return response.json();
 			})
 			.then((serverPhotos) => {
+				console.log(`Fotos recebidas: ${serverPhotos.length}`);
 				setPhotos(serverPhotos);
-				setArePhotosLoading(false);
 			})
 			.catch((error) => {
 				console.error("Erro ao buscar fotos:", error);
-				alert(
-					`Não foi possível carregar as recordações. Verifique a consola para mais detalhes.`
-				);
+				alert(`Não foi possível carregar as recordações.`);
+			})
+			.finally(() => {
 				setArePhotosLoading(false);
 			});
-	}, []);
+	}, []); // O array vazio [] significa que a função nunca muda.
+
+	// ✅ **EFEITO INICIAL**
+	// Busca as fotos apenas uma vez, quando o componente é montado pela primeira vez.
+	useEffect(() => {
+		fetchPhotos();
+	}, [fetchPhotos]);
 
 	// O resto da lógica do App (countdown, música, etc.) permanece o mesmo...
 	useEffect(() => {
@@ -452,6 +467,7 @@ function App() {
 							</div>
 						</main>
 					</div>
+					{/* ✅ MODIFICADO: Passa a função `fetchPhotos` para o modal da galeria */}
 					{activeModal === "rsvp" && (
 						<RSVPForm onClose={() => setActiveModal(null)} />
 					)}
@@ -462,8 +478,8 @@ function App() {
 						<PhotoGalleryModal
 							onClose={() => setActiveModal(null)}
 							photos={photos}
-							setPhotos={setPhotos}
 							isLoading={arePhotosLoading}
+							onPhotoUploadSuccess={fetchPhotos}
 						/>
 					)}
 				</>
@@ -627,8 +643,13 @@ const GiftListModal = ({ onClose }) => {
 	);
 };
 
-// MODIFICADO: Componente PhotoGalleryModal totalmente atualizado para usar o backend Node.js
-const PhotoGalleryModal = ({ onClose, photos, setPhotos, isLoading }) => {
+// ✅ **MODIFICADO: O modal da galeria agora chama uma função quando o upload é bem-sucedido**
+const PhotoGalleryModal = ({
+	onClose,
+	photos,
+	isLoading,
+	onPhotoUploadSuccess,
+}) => {
 	const [isUploading, setIsUploading] = useState(false);
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const fileInputRef = useRef(null);
@@ -649,16 +670,19 @@ const PhotoGalleryModal = ({ onClose, photos, setPhotos, isLoading }) => {
 				.then((response) => response.json())
 				.then((data) => {
 					if (data.success) {
-						setPhotos((prevPhotos) => [data.url, ...prevPhotos]);
-						setCurrentIndex(0);
+						console.log("Upload com sucesso! A pedir a nova lista de fotos.");
+						// Em vez de atualizar o estado localmente, chama a função do componente pai.
+						onPhotoUploadSuccess();
+						setCurrentIndex(0); // Reseta o carrossel para a imagem mais nova
 					} else {
 						alert("Erro ao enviar a foto: " + data.message);
 					}
-					setIsUploading(false);
 				})
 				.catch((error) => {
 					console.error("Erro no upload:", error);
 					alert("Ocorreu um erro de rede. Tente novamente.");
+				})
+				.finally(() => {
 					setIsUploading(false);
 				});
 		}
@@ -688,9 +712,10 @@ const PhotoGalleryModal = ({ onClose, photos, setPhotos, isLoading }) => {
 				) : photos.length > 0 ? (
 					<>
 						<img
+							key={photos[currentIndex]} // Adiciona uma key para forçar o React a recarregar a tag img
 							src={`${API_BASE_URL}/${photos[currentIndex]}`}
 							alt={`Recordação ${currentIndex + 1}`}
-							className="w-full h-auto max-h-[55vh] object-contain rounded-lg"
+							className="w-full h-auto max-h-[55vh] object-contain rounded-lg animate-fade-in"
 						/>
 						{photos.length > 1 && (
 							<>
