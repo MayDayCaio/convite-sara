@@ -72,15 +72,25 @@ function App() {
 
 	// **CORRIGIDO**: Busca as fotos do servidor UMA VEZ quando o componente App é montado.
 	useEffect(() => {
-		fetch(`/api/list_photos.php?t=${new Date().getTime()}`)
-			.then((response) => response.json())
+		fetch(`${API_BASE_URL}/api/list_photos.php?t=${new Date().getTime()}`) // MODIFICADO AQUI
+			.then((response) => {
+				if (!response.ok) {
+					throw new Error(
+						`A resposta da rede não foi boa: ${response.statusText}`
+					);
+				}
+				return response.json();
+			})
 			.then((serverPhotos) => {
-				// Nenhuma formatação necessária se as URLs já vierem prontas do banco
 				setPhotos(serverPhotos);
 				setArePhotosLoading(false);
 			})
 			.catch((error) => {
-				console.error("Erro ao buscar fotos:", error);
+				console.error("Erro detalhado ao buscar fotos:", error);
+				// Alerta melhorado para depuração
+				alert(
+					`Não foi possível carregar as recordações. Verifique a consola para mais detalhes. Erro: ${error.message}`
+				);
 				setArePhotosLoading(false);
 			});
 	}, []);
@@ -657,7 +667,10 @@ const PhotoGalleryModal = ({ onClose, photos, setPhotos, isLoading }) => {
 			const formData = new FormData();
 			formData.append("photo", file);
 
-			fetch("/api/upload.php", { method: "POST", body: formData })
+			fetch(`${API_BASE_URL}/api/upload.php`, {
+				method: "POST",
+				body: formData,
+			}) 
 				.then((response) => response.json())
 				.then((data) => {
 					if (data.success) {
