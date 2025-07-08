@@ -28,7 +28,7 @@ import {
 // Importa a foto de perfil estática.
 import profilePic from "./assets/2.png";
 // Adicione esta linha no topo do ficheiro, depois das importações
-const API_BASE_URL = "https://convites-sarah.dustdevs.com";
+
 
 // --- Componentes Visuais --- //
 const DaisyVisual = () => (
@@ -514,7 +514,8 @@ const RSVPForm = ({ onClose }) => {
 	const handleSubmit = (e) => {
 		e.preventDefault();
 		setSubmissionStatus("A enviar a confirmação...");
-		const scriptURL = "COLOQUE_SEU_URL_DO_GOOGLE_SCRIPT_AQUI";
+		const scriptURL =
+			"AKfycbzC3J9W939vSTM-NfpHtNWj2K7buSfNnqvF1wmfbRroa4pa57W3rz2wh0bm18Gr8CyS";
 		const formData = new FormData();
 		formData.append("Nome", name);
 		formData.append("Adultos", adults);
