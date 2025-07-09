@@ -48,7 +48,7 @@ app.get("/api/photos", (req, res) => {
 		// Filtra apenas por arquivos de imagem e cria o caminho relativo
 		const photoUrls = files
 			.filter((file) => /\.(jpg|jpeg|png|gif)$/i.test(file))
-			.map((file) => `uploads/${file}`) // Ex: 'uploads/12345.jpg'
+			.map((file) => `uploads/${file}`) // Ex: 'uploads/12345.jpg' 
 
 		console.log(
 			`[SERVIDOR] Encontrei ${photoUrls.length} fotos. Enviando a lista.`
