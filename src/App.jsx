@@ -1,5 +1,3 @@
-// src/App.jsx
-
 import React, {
 	useState,
 	useMemo,
@@ -20,11 +18,11 @@ import {
 	ToyBrick,
 	Loader,
 	Camera,
-	Music,
-	Music2,
 	ChevronLeft,
 	ChevronRight,
 	Upload,
+	Volume2,
+	VolumeX,
 } from "lucide-react";
 import profilePic from "./assets/2.png";
 
@@ -59,7 +57,7 @@ function App() {
 	const [hasInteracted, setHasInteracted] = useState(false);
 	const [activeModal, setActiveModal] = useState(null);
 	const [timeLeft, setTimeLeft] = useState({});
-	const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+	const [isMuted, setIsMuted] = useState(true);
 	const audioRef = useRef(null);
 	const [photos, setPhotos] = useState([]);
 	const [arePhotosLoading, setArePhotosLoading] = useState(true);
@@ -83,7 +81,6 @@ function App() {
 		fetchPhotos();
 	}, [fetchPhotos]);
 
-	// Demais lógicas do App (sem alterações)
 	useEffect(() => {
 		const timer = setInterval(() => {
 			const partyDate = new Date("2025-08-17T12:00:00").getTime();
@@ -103,28 +100,22 @@ function App() {
 		}, 1000);
 		return () => clearInterval(timer);
 	}, []);
+
 	const handleEnter = () => {
 		setHasInteracted(true);
-		if (audioRef.current && !isMusicPlaying) {
-			audioRef.current
-				.play()
-				.then(() => setIsMusicPlaying(true))
-				.catch((error) =>
-					console.error("A reprodução automática do áudio falhou:", error)
-				);
+		if (audioRef.current) {
+			audioRef.current.muted = false;
+			setIsMuted(false);
 		}
 	};
-	const toggleMusic = () => {
+
+	const toggleMute = () => {
 		if (!audioRef.current) return;
-		if (isMusicPlaying) {
-			audioRef.current.pause();
-		} else {
-			audioRef.current
-				.play()
-				.catch((e) => console.error("Erro ao tocar áudio:", e));
-		}
-		setIsMusicPlaying(!isMusicPlaying);
+		const nextMutedState = !audioRef.current.muted;
+		audioRef.current.muted = nextMutedState;
+		setIsMuted(nextMutedState);
 	};
+
 	const sceneryElements = useMemo(
 		() =>
 			Array.from({ length: 45 }).map((_, i) =>
@@ -312,14 +303,15 @@ function App() {
 	return (
 		<div className="relative h-screen w-full bg-gradient-to-b from-[#1e2a47] via-[#283e66] to-[#4a6fa5] font-sans overflow-hidden p-4 flex items-center justify-center">
 			<style>{`@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap'); @keyframes float-sway { 0% { transform: translateY(110vh); opacity: 0; } 10% { opacity: 1; } 50% { transform: translateY(50vh) translateX(var(--x-sway)); } 90% { opacity: 1; } 100% { transform: translateY(-10vh) translateX(var(--x-sway-end)); opacity: 0; } } @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } @keyframes twinkle { 0%, 100% { box-shadow: 0 0 5px 2px #fef08a, 0 0 1px 1px #fef08a inset; opacity: 0.8; transform: scale(1); } 50% { box-shadow: 0 0 10px 3px #fef08a, 0 0 2px 2px #fef08a inset; opacity: 1; transform: scale(1.1); } } @keyframes firefly-move { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(var(--x1), var(--y1)); } 50% { transform: translate(var(--x2), var(--y2)); } 75% { transform: translate(var(--x3), var(--y3)); } } @keyframes card-enter { from { transform: translateY(20px) scale(0.95); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } } @keyframes pulse-gentle { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } } @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } } @keyframes slide-up { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } } .animate-spin-slow { animation: spin-slow 25s linear infinite; } .animate-card-enter { animation: card-enter 0.8s ease-out forwards; } .modal-content { animation: slide-up 0.5s ease-out forwards; } .custom-scrollbar::-webkit-scrollbar { width: 6px; } .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 10px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(254, 240, 138, 0.5); border-radius: 10px; } .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(253, 224, 71, 0.7); }`}</style>
+
 			<audio
 				ref={audioRef}
-				src="https://cdn.pixabay.com/download/audio/2022/08/04/audio_2dde649a80.mp3?filename=inspiring-cinematic-ambient-116199.mp3"
+				src="/uma-florzinha-pequenininha.mp3"
 				loop
-				preload="auto"
-				onPlay={() => setIsMusicPlaying(true)}
-				onPause={() => setIsMusicPlaying(false)}
+				autoPlay
+				muted={isMuted}
 			/>
+
 			{!hasInteracted ? (
 				<div className="z-[100] text-center animate-fade-in">
 					<div className="w-48 h-48 mx-auto mb-6">
@@ -342,9 +334,9 @@ function App() {
 			) : (
 				<>
 					<button
-						onClick={toggleMusic}
+						onClick={toggleMute}
 						className="fixed top-4 right-4 z-[60] text-white bg-black/30 p-2 rounded-full backdrop-blur-sm hover:bg-black/50 transition animate-pulse-gentle">
-						{isMusicPlaying ? <Music size={20} /> : <Music2 size={20} />}
+						{isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
 					</button>
 					{sceneryElements}
 					<div className="relative w-full max-w-sm flex items-center justify-center">
@@ -485,35 +477,57 @@ const Modal = ({ onClose, children }) => (
 		</div>
 	</div>
 );
+
 const RSVPForm = ({ onClose }) => {
 	const [name, setName] = useState("");
+	const [whatsapp, setWhatsapp] = useState("");
 	const [adults, setAdults] = useState(1);
-	const [children, setChildren] = useState(0);
+	const [childrenCount, setChildrenCount] = useState(0);
 	const [submissionStatus, setSubmissionStatus] = useState("");
-	const handleSubmit = (e) => {
+
+	const handleSubmit = async (e) => {
 		e.preventDefault();
-		setSubmissionStatus("A enviar a confirmação...");
-		const scriptURL =
-			"AKfycbzC3J9W939vSTM-NfpHtNWj2K7buSfNnqvF1wmfbRroa4pa57W3rz2wh0bm18Gr8CyS";
-		const formData = new FormData();
-		formData.append("Nome", name);
-		formData.append("Adultos", adults);
-		formData.append("Crianças", children);
-		fetch(scriptURL, { method: "POST", body: formData })
-			.then((response) => {
-				setSubmissionStatus(`🎉 Oba, ${name}! Presença confirmada.`);
-				setName("");
-				setAdults(1);
-				setChildren(0);
-			})
-			.catch((error) => {
-				setSubmissionStatus("❌ Ups! Ocorreu um erro.");
-				console.error("Erro!", error.message);
+		setSubmissionStatus("A enviar a sua confirmação...");
+
+		const n8nWebhookUrl = "https://SEU_DOMINIO_N8N.com/webhook/SUA_URL_AQUI"; // ⚠️ Lembre-se de substituir
+
+		const rsvpData = {
+			name: name,
+			whatsapp: whatsapp,
+			adults: parseInt(adults, 10),
+			children: parseInt(childrenCount, 10),
+			timestamp: new Date().toISOString(),
+		};
+
+		try {
+			const response = await fetch(n8nWebhookUrl, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(rsvpData),
 			});
+
+			if (!response.ok) {
+				throw new Error(
+					`O webhook do n8n respondeu com o estado: ${response.status}`
+				);
+			}
+
+			setSubmissionStatus(`🎉 Oba, ${name}! Presença confirmada. Obrigado!`);
+			setName("");
+			setWhatsapp("");
+			setAdults(1);
+			setChildrenCount(0);
+		} catch (error) {
+			console.error("Erro ao enviar para o n8n:", error);
+			setSubmissionStatus(
+				"❌ Ups! Ocorreu um erro ao enviar. Tente novamente."
+			);
+		}
 	};
+
 	return (
 		<Modal onClose={onClose}>
-			<div className="flex justify-between items-center mb-3">
+			<div className="flex justify-between items-center mb-4">
 				<h2
 					className="text-center text-2xl font-bold text-yellow-300"
 					style={{ fontFamily: "'Dancing Script', cursive" }}>
@@ -530,7 +544,7 @@ const RSVPForm = ({ onClose }) => {
 					{submissionStatus}
 				</p>
 			) : (
-				<form onSubmit={handleSubmit} className="space-y-3">
+				<form onSubmit={handleSubmit} className="space-y-4">
 					<div>
 						<label
 							htmlFor="name"
@@ -544,10 +558,28 @@ const RSVPForm = ({ onClose }) => {
 							value={name}
 							onChange={(e) => setName(e.target.value)}
 							required
-							placeholder="Seu nome"
+							placeholder="O seu nome"
 						/>
 					</div>
-					<div className="flex gap-3">
+
+					<div>
+						<label
+							htmlFor="whatsapp"
+							className="block text-sm font-medium text-white/80 mb-1">
+							Seu WhatsApp:
+						</label>
+						<input
+							type="tel"
+							id="whatsapp"
+							className="w-full p-2 text-sm bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-300 transition"
+							value={whatsapp}
+							onChange={(e) => setWhatsapp(e.target.value)}
+							required
+							placeholder="(99) 99999-9999"
+						/>
+					</div>
+
+					<div className="flex gap-4">
 						<div className="w-1/2">
 							<label
 								htmlFor="adults"
@@ -574,8 +606,8 @@ const RSVPForm = ({ onClose }) => {
 								type="number"
 								id="children"
 								className="w-full p-2 text-sm bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-300 transition"
-								value={children}
-								onChange={(e) => setChildren(e.target.value)}
+								value={childrenCount}
+								onChange={(e) => setChildrenCount(e.target.value)}
 								min="0"
 								required
 							/>
@@ -583,7 +615,7 @@ const RSVPForm = ({ onClose }) => {
 					</div>
 					<button
 						type="submit"
-						disabled={!name}
+						disabled={!name || !whatsapp}
 						className="w-full bg-yellow-400 text-gray-800 font-bold py-2.5 rounded-full text-base transition-transform duration-300 hover:scale-105 shadow-lg disabled:bg-gray-500 disabled:cursor-not-allowed">
 						Enviar Confirmação
 					</button>
@@ -592,6 +624,7 @@ const RSVPForm = ({ onClose }) => {
 		</Modal>
 	);
 };
+
 const GiftListModal = ({ onClose }) => {
 	const giftList = [
 		{ id: 1, icon: <Shirt size={24} />, name: "Roupinhas (Tamanho 2)" },
@@ -632,20 +665,15 @@ const PhotoGalleryModal = ({ onClose, photos, isLoading, onUploadSuccess }) => {
 	const [isUploading, setIsUploading] = useState(false);
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const fileInputRef = useRef(null);
-
-	// ✅ **NOVO EFEITO:** Garante que o carrossel vá para a foto mais recente sempre que a lista de fotos mudar
 	useEffect(() => {
 		setCurrentIndex(0);
 	}, [photos]);
-
 	const handlePhotoUpload = (event) => {
 		const file = event.target.files[0];
 		if (!file) return;
-
 		setIsUploading(true);
 		const formData = new FormData();
 		formData.append("photo", file);
-
 		fetch(`${API_BASE_URL}/api/upload`, { method: "POST", body: formData })
 			.then((res) => res.json())
 			.then((data) => {
@@ -653,7 +681,7 @@ const PhotoGalleryModal = ({ onClose, photos, isLoading, onUploadSuccess }) => {
 					console.log(
 						"[GALERIA] Upload OK. Pedindo para o App atualizar a lista."
 					);
-					onUploadSuccess(); // AVISA O PAI PARA BUSCAR A LISTA NOVA
+					onUploadSuccess();
 				} else {
 					alert("Erro no upload: " + data.message);
 				}
@@ -661,13 +689,11 @@ const PhotoGalleryModal = ({ onClose, photos, isLoading, onUploadSuccess }) => {
 			.catch((err) => console.error("[GALERIA] Erro de upload:", err))
 			.finally(() => setIsUploading(false));
 	};
-
 	const nextPhoto = () =>
 		photos.length && setCurrentIndex((prev) => (prev + 1) % photos.length);
 	const prevPhoto = () =>
 		photos.length &&
 		setCurrentIndex((prev) => (prev - 1 + photos.length) % photos.length);
-
 	return (
 		<Modal onClose={onClose}>
 			<div className="flex justify-between items-center mb-2">
