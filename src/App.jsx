@@ -489,7 +489,7 @@ const RSVPForm = ({ onClose }) => {
 		e.preventDefault();
 		setSubmissionStatus("A enviar a sua confirmação...");
 
-		const n8nWebhookUrl = "https://SEU_DOMINIO_N8N.com/webhook/SUA_URL_AQUI"; // ⚠️ Lembre-se de substituir
+		const n8nWebhookUrl = "https://n8n.dustdevs.cloud/webhook/df60499e-0e57-4dd3-9fce-1def1081c999"; // ⚠️ Lembre-se de substituir
 
 		const rsvpData = {
 			name: name,
